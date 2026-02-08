@@ -2,18 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Cheat Chess</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cheat Chess — Best Move</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="game-container">
-        <div class="control-panel">
-            <button onclick="startNewGame()">New Game</button>
-            <button onclick="flipBoard()">Flip Board</button>
-            <button onclick="undoMove()">Undo</button>
+        <aside class="control-panel">
+            <div class="buttons">
+                <button onclick="startNewGame()">New Game</button>
+                <button class="secondary" onclick="flipBoard()">Flip Board</button>
+                <button class="secondary" onclick="undoMove()">Undo</button>
+            </div>
+            <div class="status-card">
+                <p id="gameStatus">Game Started</p>
+            </div>
+            <div id="bestMoveHint" class="best-move-hint loading">
+                <span class="spinner"></span>
+                <span class="hint-text">Loading best move…</span>
+            </div>
+        </aside>
+
+        <div class="board-wrapper">
+            <div class="rank-labels" id="rankLabels" aria-hidden="true"></div>
+            <div class="file-labels" id="fileLabels" aria-hidden="true"></div>
+            <div id="board"></div>
         </div>
-        <div id="board"></div>
-        <div id="gameStatus"></div>
+
         <div id="moveHistoryContainer">
             <h3>Move History</h3>
             <ul id="moveHistory"></ul>

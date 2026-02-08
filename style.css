@@ -1,157 +1,480 @@
+/* --- Cheat Chess — Premium UI --- */
+:root {
+    --bg-deep: #0f1419;
+    --bg-panel: #1a2332;
+    --bg-panel-hover: #243044;
+    --felt: #1e3a2f;
+    --felt-border: #2d5a47;
+    --square-light: #e8ddc9;
+    --square-dark: #7d9b76;
+    --square-hover: rgba(255, 255, 255, 0.12);
+    --accent: #d4a84b;
+    --accent-dim: #b8923d;
+    --accent-glow: rgba(212, 168, 75, 0.4);
+    --best-move: rgba(120, 200, 160, 0.5);
+    --last-move: rgba(212, 168, 75, 0.45);
+    --selected: rgba(212, 168, 75, 0.6);
+    --danger: #c75c5c;
+    --text: #e6e8eb;
+    --text-muted: #8b95a0;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --square-size: 56px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
+    padding: 24px;
+    min-height: 100vh;
+    background: var(--bg-deep);
+    color: var(--text);
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    background-image: radial-gradient(ellipse 120% 80% at 50% 0%, rgba(30, 58, 47, 0.25), transparent 60%);
 }
 
 .game-container {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    background-color: #777777;
-    border: 2px solid #ccc;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 24px;
+    max-width: 100%;
+    animation: fadeIn 0.5s ease-out;
 }
 
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Left panel: controls + status --- */
 .control-panel {
     display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 15px;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 200px;
 }
 
-#playerColor {
-    padding: 5px;
-    font-size: 16px;
+.control-panel .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 button {
-    padding: 8px 15px;
-    font-size: 16px;
-    color: white;
-    background-color: #007bff;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bg-deep);
+    background: var(--accent);
     border: none;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 button:hover {
-    background-color: #0056b3;
+    background: #e0b85a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 168, 75, 0.35);
+}
+
+button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+button.secondary {
+    background: var(--bg-panel);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+button.secondary:hover {
+    background: var(--bg-panel-hover);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Status card --- */
+.status-card {
+    background: var(--bg-panel);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: var(--shadow);
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.3s ease;
+}
+
+.status-card.checkmate {
+    border-color: var(--accent-glow);
+    animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+.status-card.draw {
+    border-color: rgba(150, 180, 200, 0.4);
+}
+
+@keyframes statusPulse {
+    0%, 100% { box-shadow: var(--shadow); }
+    50% { box-shadow: 0 0 24px var(--accent-glow); }
+}
+
+#gameStatus {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    text-align: center;
+    margin: 0;
+}
+
+/* --- Best move hint --- */
+.best-move-hint {
+    background: var(--bg-panel);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+}
+
+.best-move-hint.loading {
+    color: var(--text-muted);
+}
+
+.best-move-hint.loading .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.best-move-hint .label {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* --- Board wrapper with coordinates --- */
+.board-wrapper {
+    position: relative;
+    padding: 28px 28px 12px 12px;
+    background: var(--felt);
+    border-radius: var(--radius);
+    border: 3px solid var(--felt-border);
+    box-shadow: var(--shadow), inset 0 0 60px rgba(0, 0, 0, 0.15);
+    animation: boardIn 0.6s ease-out;
+}
+
+@keyframes boardIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* File labels (a–h) */
+.file-labels {
+    position: absolute;
+    bottom: 4px;
+    left: 28px;
+    display: grid;
+    grid-template-columns: repeat(8, var(--square-size));
+    width: calc(8 * var(--square-size));
+    pointer-events: none;
+}
+
+.file-labels span {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    opacity: 0.9;
+}
+
+/* Rank labels (1–8) */
+.rank-labels {
+    position: absolute;
+    top: 28px;
+    left: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    height: calc(8 * var(--square-size));
+    pointer-events: none;
+}
+
+.rank-labels span {
+    height: var(--square-size);
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    opacity: 0.9;
 }
 
 #board {
     display: grid;
-    grid-template-columns: repeat(8, 50px);
-    grid-template-rows: repeat(8, 50px);
-    border: 2px solid #333;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    grid-template-columns: repeat(8, var(--square-size));
+    grid-template-rows: repeat(8, var(--square-size));
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .square {
-    width: 50px;
-    height: 50px;
+    width: var(--square-size);
+    height: var(--square-size);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 50px;
+    font-size: calc(var(--square-size) * 0.82);
     cursor: pointer;
     user-select: none;
+    position: relative;
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .square.white {
-    background-color: #f0d9b5;
+    background-color: var(--square-light);
 }
 
 .square.black {
-    background-color: #b58863;
+    background-color: var(--square-dark);
+}
+
+.square:hover {
+    background-color: var(--square-light) !important;
+    filter: brightness(1.08);
+}
+
+.square.black:hover {
+    background-color: var(--square-dark) !important;
+    filter: brightness(1.15);
 }
 
 .square.selected {
-    outline: 3px solid #ffa726;
-}
-
-#gameStatus {
-    font-size: 18px;
-    font-weight: bold;
-    color: white;
-    text-align: center;
+    background: var(--selected) !important;
+    box-shadow: inset 0 0 0 3px var(--accent);
+    z-index: 2;
 }
 
 .square.last-move {
-    background-color: #fdd835 !important;
+    background-color: var(--last-move) !important;
+    animation: lastMoveFlash 0.5s ease-out;
 }
 
-#moveHistoryContainer {
-    width: 100%;
-    max-width: 300px;
-    background-color: #f9f9f9;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 10px;
-    margin-top: 15px;
-    font-size: 14px;
-    overflow-y: auto;
-    max-height: 150px;
+@keyframes lastMoveFlash {
+    0% { filter: brightness(1.4); }
+    100% { filter: brightness(1); }
 }
 
-#moveHistoryContainer h3 {
-    margin: 0 0 10px 0;
-    font-size: 16px;
-    text-align: center;
-    color: #333;
+.square.best-move {
+    box-shadow: inset 0 0 0 2px rgba(120, 200, 160, 0.9);
+    background-color: var(--best-move) !important;
+    animation: bestMovePulse 2s ease-in-out infinite;
 }
 
-#moveHistory {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
+@keyframes bestMovePulse {
+    0%, 100% { box-shadow: inset 0 0 0 2px rgba(120, 200, 160, 0.9); }
+    50% { box-shadow: inset 0 0 0 3px rgba(120, 200, 160, 1), 0 0 12px rgba(120, 200, 160, 0.3); }
 }
 
-#moveHistory li {
-    padding: 2px 0;
-    color: #555;
-}
-
-.square {
+/* Piece container */
+.square .piece-char {
     position: relative;
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.3s ease;
-}
-
-.piece {
-    position: absolute;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    font-weight: bold;
-    transition: transform 0.3s ease;
-    object-fit: contain;
+    transition: transform 0.2s ease;
     pointer-events: none;
 }
 
-.square.highlight-move {
-    background-color: rgba(0, 255, 0, 0.9);
+/* SVG piece sizing */
+.square .piece-char .piece-svg {
+    width: 85%;
+    height: 85%;
+    display: block;
 }
 
+.square .piece-char .piece-svg path {
+    transition: filter 0.15s ease;
+}
+
+/* White pieces: color = fill; outline explicitly black */
+.square .piece-char.piece-white {
+    color: #f2ebe0;
+}
+.square .piece-char.piece-white .piece-svg [stroke] {
+    stroke: #000;
+}
+.square .piece-char.piece-white .piece-svg path,
+.square .piece-char.piece-white .piece-svg circle {
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+/* Black pieces: color = fill; outline explicitly white */
+.square .piece-char.piece-black {
+    color: #252525;
+}
+.square .piece-char.piece-black .piece-svg [stroke] {
+    stroke: #fff;
+}
+.square .piece-char.piece-black .piece-svg path,
+.square .piece-char.piece-black .piece-svg circle {
+    filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.08)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+
+.square.dragging .piece-char {
+    transform: scale(1.08);
+}
+
+.square.place-piece .piece-char {
+    animation: pieceDrop 0.25s ease-out;
+}
+
+@keyframes pieceDrop {
+    0% { transform: scale(0.4); opacity: 0.6; }
+    70% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Possible move dots */
 .possible-move {
     position: absolute;
-    width: 15px;
-    height: 15px;
-    background-color: rgba(0, 0, 0, 0.4);
+    width: 22%;
+    height: 22%;
+    max-width: 18px;
+    max-height: 18px;
+    background-color: rgba(0, 0, 0, 0.35);
     border-radius: 50%;
     pointer-events: none;
     z-index: 1;
+    animation: dotIn 0.2s ease-out;
 }
+
+.square:not(.white) .possible-move {
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+@keyframes dotIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Capture hint: ring instead of dot */
+.possible-move.capture {
+    width: 88%;
+    height: 88%;
+    max-width: none;
+    max-height: none;
+    background: transparent;
+    border: 3px solid rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+}
+
+.square:not(.white) .possible-move.capture {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* --- Move history --- */
+#moveHistoryContainer {
+    min-width: 220px;
+    max-width: 280px;
+    background: var(--bg-panel);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    max-height: 320px;
+    overflow-y: auto;
+    animation: fadeIn 0.5s ease-out 0.2s both;
+}
+
+#moveHistoryContainer h3 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    text-align: left;
+}
+
+#moveHistory {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#moveHistory li {
+    padding: 6px 10px;
+    font-size: 13px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+#moveHistory li:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+#moveHistory li:last-child {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+/* Scrollbar */
+#moveHistoryContainer::-webkit-scrollbar {
+    width: 8px;
+}
+
+#moveHistoryContainer::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+#moveHistoryContainer::-webkit-scrollbar-thumb {
+    background: var(--accent-dim);
+    border-radius: 4px;
+}
+
+#moveHistoryContainer::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
+

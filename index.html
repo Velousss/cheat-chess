@@ -2,39 +2,335 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cheat Chess — Best Move</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cheat Chess — Best Move & Engine Assistant</title>
+    <meta name="description" content="Ultimate responsive chess assistant with real-time Stockfish best moves, evaluation bar, AI opponent, and mobile touch support.">
+    <meta name="theme-color" content="#0d1117">
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="game-container">
-        <aside class="control-panel">
-            <div class="buttons">
-                <button onclick="startNewGame()">New Game</button>
-                <button class="secondary" onclick="flipBoard()">Flip Board</button>
-                <button class="secondary" onclick="undoMove()">Undo</button>
+    <div class="app-layout">
+        <!-- Top App Bar -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11.5 2a2.5 2.5 0 0 1 5 0 2.5 2.5 0 0 1-1.3 2.2L16 8l3 1-1.5 3.5 1.5 3.5-3 1-.8 3.8A2.5 2.5 0 0 1 12 22a2.5 2.5 0 0 1-3.2-1.2L8 17l-3-1 1.5-3.5L5 9l3-1 .8-3.8A2.5 2.5 0 0 1 11.5 2z"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>Cheat Chess</h1>
+                    <span class="brand-badge">Stockfish 18</span>
+                </div>
             </div>
-            <div class="status-card">
-                <p id="gameStatus">Game Started</p>
-            </div>
-            <div id="bestMoveHint" class="best-move-hint loading">
-                <span class="spinner"></span>
-                <span class="hint-text">Loading best move…</span>
-            </div>
-        </aside>
 
-        <div class="board-wrapper">
-            <div class="rank-labels" id="rankLabels" aria-hidden="true"></div>
-            <div class="file-labels" id="fileLabels" aria-hidden="true"></div>
-            <div id="board"></div>
-        </div>
+            <!-- Mode Selector -->
+            <div class="mode-selector">
+                <button type="button" class="mode-btn active" data-mode="assistant" title="Chess Assistant Mode">
+                    <span>Assistant</span>
+                </button>
+                <button type="button" class="mode-btn" data-mode="ai" title="Play against Stockfish AI">
+                    <span>vs AI</span>
+                </button>
+                <button type="button" class="mode-btn" data-mode="sandbox" title="Two Player / Sandbox">
+                    <span>2-Player</span>
+                </button>
+            </div>
 
-        <div id="moveHistoryContainer">
-            <h3>Move History</h3>
-            <ul id="moveHistory"></ul>
+            <!-- Quick Utility Buttons -->
+            <div class="header-actions">
+                <button type="button" id="soundToggleBtn" class="icon-btn" title="Toggle Sound" aria-label="Toggle Sound">
+                    <svg id="soundOnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    <svg id="soundOffIcon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                </button>
+                <button type="button" id="fenModalBtn" class="icon-btn" title="Load or Copy FEN / PGN" aria-label="FEN and PGN Tools">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                </button>
+                <button type="button" id="flipBtn" class="icon-btn" title="Flip Board (F)" aria-label="Flip Board">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Left Side / Evaluation & Board Container -->
+            <section class="chess-stage">
+                <!-- Top Player Card (Opponent / Black default) -->
+                <div class="player-bar top-player" id="topPlayerBar">
+                    <div class="player-info">
+                        <span class="player-avatar" id="topAvatar">♟</span>
+                        <div class="player-meta">
+                            <span class="player-name" id="topPlayerName">Black</span>
+                            <span class="player-sub" id="topPlayerSub">Opponent</span>
+                        </div>
+                    </div>
+                    <div class="player-tray">
+                        <div class="captured-pieces" id="topCaptured"></div>
+                        <span class="material-advantage" id="topAdvantage"></span>
+                    </div>
+                    <div class="turn-pip" id="topTurnPip" title="Active turn"></div>
+                </div>
+
+                <!-- Board Wrapper with Eval Bar & Overlays -->
+                <div class="board-area">
+                    <!-- Vertical Eval Bar -->
+                    <div class="eval-bar-wrapper" id="evalBarWrapper" title="Position Evaluation">
+                        <div class="eval-bar-track">
+                            <div class="eval-bar-fill" id="evalBarFill" style="height: 50%;"></div>
+                        </div>
+                        <span class="eval-score-text" id="evalScoreText">0.0</span>
+                    </div>
+
+                    <!-- Chess Board with SVG Arrow Overlay -->
+                    <div class="board-wrapper" id="boardWrapper">
+                        <div class="rank-labels" id="rankLabels" aria-hidden="true"></div>
+                        <div class="file-labels" id="fileLabels" aria-hidden="true"></div>
+                        
+                        <!-- 8x8 Grid -->
+                        <div id="board" role="grid" aria-label="Chess Board"></div>
+                        
+                        <!-- SVG Layer for Best Move Arrow -->
+                        <svg id="arrowOverlay" class="arrow-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#4ade80" stop-opacity="0.85"/>
+                                    <stop offset="100%" stop-color="#10b981" stop-opacity="0.95"/>
+                                </linearGradient>
+                                <filter id="arrowGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#052e16" flood-opacity="0.7"/>
+                                </filter>
+                                <marker id="arrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="4" markerHeight="4" orient="auto">
+                                    <path d="M 0 1.5 L 9 5 L 0 8.5 L 2 5 z" fill="#10b981" />
+                                </marker>
+                            </defs>
+                            <g id="arrowGroup"></g>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Bottom Player Card (You / White default) -->
+                <div class="player-bar bottom-player" id="bottomPlayerBar">
+                    <div class="player-info">
+                        <span class="player-avatar" id="bottomAvatar">♙</span>
+                        <div class="player-meta">
+                            <span class="player-name" id="bottomPlayerName">White</span>
+                            <span class="player-sub" id="bottomPlayerSub">You</span>
+                        </div>
+                    </div>
+                    <div class="player-tray">
+                        <div class="captured-pieces" id="bottomCaptured"></div>
+                        <span class="material-advantage" id="bottomAdvantage"></span>
+                    </div>
+                    <div class="turn-pip" id="bottomTurnPip" title="Active turn"></div>
+                </div>
+
+                <!-- Best Move Cheat Card / Hero Widget -->
+                <div class="best-move-widget" id="bestMoveWidget">
+                    <div class="best-move-main">
+                        <div class="best-move-header">
+                            <span class="widget-tag">CHEAT ENGINE</span>
+                            <span class="engine-status" id="engineStatusIndicator">
+                                <span class="engine-dot"></span>
+                                <span id="engineStatusLabel">Depth 14</span>
+                            </span>
+                        </div>
+                        <div class="best-move-details">
+                            <div class="hint-large" id="bestMoveHighlightText">
+                                <span class="spinner" id="bestMoveSpinner"></span>
+                                <span id="bestMoveSanText">—</span>
+                            </div>
+                            <div class="eval-metrics" id="evalMetrics">
+                                <span class="metric-badge" id="evalPawnBadge">Eval: 0.0</span>
+                                <span class="metric-badge" id="winChanceBadge">Win: 50%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="autoPlayBestMoveBtn" class="btn-cheat" title="Play the recommended best move automatically (Shortcut: B)">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <span>Auto-Play Move</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Right Side / Navigation, History & Settings -->
+            <aside class="sidebar-panel">
+                <!-- Mobile & Desktop Primary Controls -->
+                <div class="primary-controls">
+                    <button type="button" id="newGameBtn" class="btn btn-primary" title="Start a fresh game (N)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        <span>New Game</span>
+                    </button>
+                    <button type="button" id="undoBtn" class="btn btn-secondary" title="Undo last move (Z)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+                        <span>Undo</span>
+                    </button>
+                    <button type="button" id="autoCheatToggleBtn" class="btn btn-secondary" title="Toggle Auto-Cheat Mode">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        <span id="autoCheatLabel">Auto: Off</span>
+                    </button>
+                </div>
+
+                <!-- Status Banner -->
+                <div class="game-status-banner" id="gameStatusBar">
+                    <span id="gameStatusText">Game Started</span>
+                </div>
+
+                <!-- History Navigation Stepper (Time Travel) -->
+                <div class="history-stepper">
+                    <button type="button" id="stepStartBtn" class="step-btn" title="First move" aria-label="First move">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+                    </button>
+                    <button type="button" id="stepPrevBtn" class="step-btn" title="Previous move (Left arrow)" aria-label="Previous move">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <button type="button" id="stepNextBtn" class="step-btn" title="Next move (Right arrow)" aria-label="Next move">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <button type="button" id="stepEndBtn" class="step-btn" title="Latest move" aria-label="Latest move">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                    </button>
+                </div>
+
+                <!-- Tabbed Container: Moves & Engine Intel -->
+                <div class="tabs-container">
+                    <div class="tabs-header">
+                        <button type="button" class="tab-link active" data-tab="tabMoves">Move History</button>
+                        <button type="button" class="tab-link" data-tab="tabEngine">Engine Intel</button>
+                        <button type="button" class="tab-link" data-tab="tabSettings">Options</button>
+                    </div>
+
+                    <!-- Moves Tab -->
+                    <div class="tab-content active" id="tabMoves">
+                        <div class="moves-scroll-pane" id="moveHistoryContainer">
+                            <div class="history-table-header">
+                                <span>#</span>
+                                <span>White</span>
+                                <span>Black</span>
+                            </div>
+                            <div class="history-table-body" id="moveHistoryBody">
+                                <div class="empty-history-notice">No moves yet. Make a move!</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Engine Intel Tab -->
+                    <div class="tab-content" id="tabEngine">
+                        <div class="engine-intel-pane">
+                            <div class="intel-item">
+                                <span class="intel-title">Principal Variation (Continuation)</span>
+                                <div class="pv-moves" id="engineContinuation">Analyzing…</div>
+                            </div>
+                            <div class="intel-item">
+                                <span class="intel-title">Position Evaluation</span>
+                                <div class="eval-meter-horizontal">
+                                    <div class="eval-meter-fill" id="horizontalEvalFill" style="width: 50%;"></div>
+                                </div>
+                                <div class="eval-row">
+                                    <span id="intelEvalLabel">Balanced (+0.0)</span>
+                                    <span id="intelWinRate">50% White</span>
+                                </div>
+                            </div>
+                            <div class="intel-item">
+                                <span class="intel-title">Engine Depth</span>
+                                <div class="depth-chips">
+                                    <button type="button" class="chip-btn" data-depth="10">Fast (10)</button>
+                                    <button type="button" class="chip-btn active" data-depth="14">Standard (14)</button>
+                                    <button type="button" class="chip-btn" data-depth="18">Deep (18)</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Options Tab -->
+                    <div class="tab-content" id="tabSettings">
+                        <div class="settings-pane">
+                            <label class="setting-row">
+                                <span>Show Best Move Arrow</span>
+                                <input type="checkbox" id="settingShowArrow" checked>
+                            </label>
+                            <label class="setting-row">
+                                <span>Auto-Promote to Queen</span>
+                                <input type="checkbox" id="settingAutoQueen">
+                            </label>
+                            <label class="setting-row">
+                                <span>Haptic Vibration (Mobile)</span>
+                                <input type="checkbox" id="settingHaptics" checked>
+                            </label>
+                            <label class="setting-row">
+                                <span>AI Difficulty</span>
+                                <select id="settingAiDifficulty" class="setting-select">
+                                    <option value="easy">Easy (Depth 8)</option>
+                                    <option value="medium" selected>Intermediate (Depth 12)</option>
+                                    <option value="hard">Master (Depth 16)</option>
+                                </select>
+                            </label>
+                            <label class="setting-row">
+                                <span>Player Side (vs AI)</span>
+                                <select id="settingPlayerColor" class="setting-select">
+                                    <option value="w" selected>White</option>
+                                    <option value="b">Black</option>
+                                    <option value="random">Random</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Pawn Promotion Modal -->
+    <div class="modal-backdrop hidden" id="promotionModal">
+        <div class="modal-card promotion-card">
+            <h3 class="modal-title">Promote Pawn</h3>
+            <p class="modal-desc">Choose a piece to promote to:</p>
+            <div class="promotion-pieces" id="promotionChoices">
+                <button type="button" class="promo-btn" data-piece="q" title="Queen"></button>
+                <button type="button" class="promo-btn" data-piece="n" title="Knight"></button>
+                <button type="button" class="promo-btn" data-piece="r" title="Rook"></button>
+                <button type="button" class="promo-btn" data-piece="b" title="Bishop"></button>
+            </div>
         </div>
     </div>
 
+    <!-- FEN / PGN Import & Export Modal -->
+    <div class="modal-backdrop hidden" id="fenModal">
+        <div class="modal-card fen-card">
+            <div class="modal-header">
+                <h3 class="modal-title">FEN & PGN Tools</h3>
+                <button type="button" class="close-modal-btn" id="closeFenModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="fenInput">FEN Position:</label>
+                    <div class="input-with-actions">
+                        <input type="text" id="fenInput" class="form-input" placeholder="Paste FEN string here…">
+                        <button type="button" id="copyFenBtn" class="btn btn-secondary">Copy</button>
+                        <button type="button" id="loadFenBtn" class="btn btn-primary">Load</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="pgnTextarea">PGN Notation:</label>
+                    <textarea id="pgnTextarea" class="form-input" rows="4" readonly placeholder="Game PGN will appear here…"></textarea>
+                    <div class="action-row">
+                        <button type="button" id="copyPgnBtn" class="btn btn-secondary">Copy PGN</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drag Piece Ghost Floating Avatar -->
+    <div id="dragGhost" class="drag-ghost hidden"></div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="app.js"></script>
 </body>
